@@ -38,6 +38,15 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LIM_BANK",   3, AP_L1_Control, _loiter_bank_limit, 0.0f),
 
+    // @Param: L0
+    // @DisplayName: Guidance method
+    // @Description: Guidance method. 1 = L1 guidance, 0 = L0 guidance. 
+    // @Units: no units
+    // @Range: 0 1
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("GUIDANCE_METHOD",   4, AP_L1_Control, _L_method, 1),
+
     AP_GROUPEND
 };
 
