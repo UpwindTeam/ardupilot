@@ -330,17 +330,6 @@ Vector2f Location::get_distance_NE(const Location &loc2) const
                     diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((loc2.lat+lat)/2));
 }
 
-// return relative position vector between current position and reference position MANEL
-float Location::get_relative_pos(const struct Location &loc2) const
-{
-    //relative position vector
-    Vector2f vec_rp;
-
-    vec_rp.y = (float)(lat- loc2.lat);
-    vec_rp.x = ((float)(lng-loc2.lng)) * loc2.longitude_scale();
-    return vec_rp * LOCATION_SCALING_FACTOR;
-}
-
 // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2, NOT CONSIDERING ALT FRAME!
 Vector3f Location::get_distance_NED(const Location &loc2) const
 {
@@ -380,6 +369,13 @@ Vector2F Location::get_distance_NE_ftype(const Location &loc2) const
 {
     return Vector2F((loc2.lat - lat) * ftype(LOCATION_SCALING_FACTOR),
                     diff_longitude(loc2.lng,lng) * ftype(LOCATION_SCALING_FACTOR) * longitude_scale((lat+loc2.lat)/2));
+}
+
+// return relative position vector between current position and reference position MANEL
+Vector2f Location::get_relative_pos(const Location &loc2) const
+{
+    return Vector2f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
+                    diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((loc2.lat+lat)/2));
 }
 
 // extrapolate latitude/longitude given distances (in meters) north and east
