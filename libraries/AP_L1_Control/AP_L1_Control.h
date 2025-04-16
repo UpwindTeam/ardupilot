@@ -123,6 +123,8 @@ private:
     bool _data_is_stale = true;
 
     AP_Float _loiter_bank_limit;
+    AP_Float _L_method;
+    AP_Float _L_dist;
 
     // remember reached_loiter_target decision
     struct {

@@ -98,7 +98,7 @@ public:
     Vector2F get_distance_NE_ftype(const Location &loc2) const;
 
     // return relative position vector between current position and reference position - Changes with MANEL
-    Vector2F get_relative_pos(const Location &loc2) const;
+    Vector2f get_relative_pos(const Location &loc2) const;
 
     // extrapolate latitude/longitude given distances (in meters) north and east
     static void offset_latlng(int32_t &lat, int32_t &lng, ftype ofs_north, ftype ofs_east);
