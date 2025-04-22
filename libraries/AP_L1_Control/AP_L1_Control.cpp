@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @Units: deg
     // @Range: 0 89
     // @User: Advanced
-    AP_GROUPINFO("LIM_BANK",   4, AP_L1_Control, _loiter_bank_limit, 0.0f),
+    AP_GROUPINFO("LIM_BANK",   5, AP_L1_Control, _loiter_bank_limit, 0.0f),
 
 
     AP_GROUPEND
