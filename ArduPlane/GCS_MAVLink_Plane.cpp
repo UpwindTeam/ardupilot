@@ -58,6 +58,7 @@ uint8_t GCS_MAVLINK_Plane::base_mode() const
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
     case Mode::Number::CIRCLE:
+    case Mode::Number::ELIPSE:
     case Mode::Number::TAKEOFF:
 #if MODE_AUTOLAND_ENABLED
     case Mode::Number::AUTOLAND:

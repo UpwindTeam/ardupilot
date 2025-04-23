@@ -503,6 +503,9 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius, int8_t loiter_direction)
 {
     struct Location _current_loc;
+
+    const float radius_unscaled = radius;
+    
     float Nu;
     float xtrackVel;
     float ltrackVel;
@@ -529,9 +532,9 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 
     Vector2f _groundspeed_vector = _ahrs.groundspeed_vector();
 
-    //Calculate groundspeed
-    float groundSpeed = MAX(_groundspeed_vector.length() , 1.0f);
-
+    //Calculate groundspeep
+    // float groundSpeed = MAX(_groundspeed_vector.length() , 1.0f);
+    float groundSpeed = _groundspeed_vector.length();
     // update _target_bearing_cd
     //_target_bearing_cd = _current_loc.get_bearing_to(center_WP);
 
@@ -648,6 +651,10 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
         _nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians)from AC to L1 point
     }
     */
+   _last_loiter.radius = radius_unscaled;
+   _last_loiter.direction = loiter_direction;
+   _last_loiter.center_WP = center_WP;
+   
     _data_is_stale = false; // status are correctly updated with current waypoint data 
 }
 

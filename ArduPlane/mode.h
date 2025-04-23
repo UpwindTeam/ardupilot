@@ -51,6 +51,7 @@ public:
         AVOID_ADSB    = 14,
         GUIDED        = 15,
         INITIALISING  = 16,
+        ELIPSE        = 27,
 #if HAL_QUADPLANE_ENABLED
         QSTABILIZE    = 17,
         QHOVER        = 18,
@@ -652,6 +653,32 @@ protected:
 
     bool _enter() override;
 
+    bool locked_heading;
+    int32_t locked_heading_cd;
+    uint32_t lock_timer_ms;
+};
+
+class ModeElipse : public Mode
+{
+public:
+
+    Number mode_number() const override { return Number::ELIPSE; }
+    const char *name() const override { return "ELIPSE"; }
+    const char *name4() const override { return "ELIP"; }
+
+    void update() override;
+
+    void run() override;
+
+    void stabilize();
+
+    void stabilize_quaternion();
+
+protected:
+
+    bool _enter() override;
+
+    // ADD HERE VARIABLES
     bool locked_heading;
     int32_t locked_heading_cd;
     uint32_t lock_timer_ms;
