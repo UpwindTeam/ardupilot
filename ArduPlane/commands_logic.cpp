@@ -334,6 +334,38 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 //  Nav (Must) commands
 /********************************************************************************/
 
+//Define the ellipse
+void Plane::do_ellipse()
+{
+    ellipse_S2.center_C00 = home; // location of the center of the ellipse
+
+    //Define distances
+    ellipse_S2.l_dist = 100;
+    ellipse_S2.c_dist = 50;
+
+    ellipse_S2.center_C1 = ellipse_S2.center_C00;
+    ellipse_S2.center_C1.offset(0, -ellipse_S2.c_dist);
+    ellipse_S2.center_C2 = ellipse_S2.center_C00;
+    ellipse_S2.center_C2.offset(0,  ellipse_S2.c_dist);
+
+    //Define centers
+    ellipse_S2.center_C11 = ellipse_S2.center_C00;
+    ellipse_S2.center_C11.offset(ellipse_S2.l_dist,-ellipse_S2.c_dist);
+
+    ellipse_S2.center_C12 = ellipse_S2.center_C00;
+    ellipse_S2.center_C12.offset(-ellipse_S2.l_dist,-ellipse_S2.c_dist);
+    
+    ellipse_S2.center_C21 = ellipse_S2.center_C00;
+    ellipse_S2.center_C21.offset(ellipse_S2.l_dist,ellipse_S2.c_dist);
+
+    ellipse_S2.center_C22 = ellipse_S2.center_C00;
+    ellipse_S2.center_C22.offset(-ellipse_S2.l_dist,ellipse_S2.c_dist);
+
+    hal.console->println("Initialization of EIGHT-SPHERE completed");
+
+    
+}
+
 void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
 {
     auto_state.next_wp_crosstrack = false;

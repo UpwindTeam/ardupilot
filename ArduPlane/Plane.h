@@ -388,6 +388,38 @@ private:
         uint32_t AFS_last_valid_rc_ms;
     } failsafe;
 
+
+
+struct ellipse {
+
+        // parameters to be defined by the user
+        struct Location center_C00; // location of the center of the S2
+        
+        //Define distances
+        float l_dist;
+        float c_dist;
+
+        // variables to store the current and desired location and velocity
+        struct Location aircraft_loc;
+        Vector3f aircraft_vel;
+        struct Location desired_loc;
+
+        //Define centers
+        struct Location center_C11;
+        struct Location center_C12;
+        struct Location center_C1;
+        struct Location center_C2;
+        struct Location center_C21;
+        struct Location center_C22;
+
+        //Set current quadrant to a value in {1,2,3,4}
+        int8_t current_segment;
+
+        
+
+
+}   ellipse_S2;
+
 #if HAL_QUADPLANE_ENABLED
     // Landing
     class VTOLApproach {
@@ -1012,6 +1044,9 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     float get_wp_radius() const;
 
+    //UPWIND ELIPSE
+    void Plane::do_ellipse();
+
     bool is_land_command(uint16_t cmd) const;
 
     bool do_change_speed(uint8_t speedtype, float speed_target_ms, float rhtottle_pct);
@@ -1109,6 +1144,9 @@ private:
     float mode_auto_target_airspeed_cm();
     void calc_gndspeed_undershoot();
     void update_loiter(uint16_t radius);
+    // upwind ellipse
+    void update_ellipse(uint16_t radius);
+
     void update_loiter_update_nav(uint16_t radius);
     void update_fbwb_speed_height(void);
     void setup_turn_angle(void);

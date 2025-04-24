@@ -372,6 +372,14 @@ void Plane::update_loiter(uint16_t radius)
     }
 }
 
+
+void Plane::update_ellipse(uint16_t radius)
+{
+    //definir a logica para trocar entre cada um dos quadrantes!!
+    //chamar func L1 dependendo se zona 1, 2, 3 ou 4
+    
+}
+
 /*
   handle speed and height control in FBWB, CRUISE, and optionally, LOITER mode.
   In this mode the elevator is used to change target altitude. The
