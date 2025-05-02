@@ -340,8 +340,8 @@ void Plane::do_ellipse()
     ellipse_S2.center_C00 = home; // location of the center of the ellipse
 
     //Define distances
-    ellipse_S2.l_dist = 100;
-    ellipse_S2.c_dist = 50;
+    ellipse_S2.l_dist = 150;
+    ellipse_S2.c_dist = 100;
 
     ellipse_S2.center_C1 = ellipse_S2.center_C00;
     ellipse_S2.center_C1.offset(0, -ellipse_S2.c_dist);
