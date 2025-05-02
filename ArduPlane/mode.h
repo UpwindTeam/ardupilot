@@ -668,20 +668,18 @@ public:
 
     void update() override;
 
-    void run() override;
+    //void run() override;
 
-    void stabilize();
+    //void stabilize();
 
-    void stabilize_quaternion();
+    //void stabilize_quaternion();
 
 protected:
 
     bool _enter() override;
 
     // ADD HERE VARIABLES
-    bool locked_heading;
-    int32_t locked_heading_cd;
-    uint32_t lock_timer_ms;
+    
 };
 
 #if HAL_ADSB_ENABLED

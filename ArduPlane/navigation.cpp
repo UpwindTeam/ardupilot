@@ -373,11 +373,32 @@ void Plane::update_loiter(uint16_t radius)
 }
 
 
-void Plane::update_ellipse(uint16_t radius)
+void Plane::update_ellipse()
 {
     //definir a logica para trocar entre cada um dos quadrantes!!
     //chamar func L1 dependendo se zona 1, 2, 3 ou 4
+    Vector2f relative_pos = current_loc.get_relative_pos(ellipse_S2.center_C00);
     
+    // case 1: y>=0 && |x|<=c
+    if(relative_pos.y>=0 && abs(relative_pos.x)<=0)
+        {
+            nav_controller->update_waypoint(ellipse_S2.center_C11,ellipse_S2.center_C12);
+        }
+    // case 2: x>c
+    if(relative_pos.x>ellipse_S2.c_dist)
+        {
+            nav_controller->update_loiter(ellipse_S2.center_C1, ellipse_S2.l_dist, 1);
+        }
+    // case 3: y<0 && |x|<=c
+    if(relative_pos.y<0 && abs(relative_pos.x)<=0)
+    {
+        nav_controller->update_waypoint(ellipse_S2.center_C22,ellipse_S2.center_C21);
+    }
+    // case 4: x<-c
+    if(relative_pos.x<-ellipse_S2.c_dist)    
+    {
+        nav_controller->update_loiter(ellipse_S2.center_C2, ellipse_S2.l_dist, 1);
+    }
 }
 
 /*

@@ -1045,7 +1045,7 @@ struct ellipse {
     float get_wp_radius() const;
 
     //UPWIND ELIPSE
-    void Plane::do_ellipse();
+    void do_ellipse();
 
     bool is_land_command(uint16_t cmd) const;
 
@@ -1145,7 +1145,7 @@ struct ellipse {
     void calc_gndspeed_undershoot();
     void update_loiter(uint16_t radius);
     // upwind ellipse
-    void update_ellipse(uint16_t radius);
+    void update_ellipse();
 
     void update_loiter_update_nav(uint16_t radius);
     void update_fbwb_speed_height(void);

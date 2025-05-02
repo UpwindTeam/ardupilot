@@ -13,6 +13,7 @@ bool ModeElipse::_enter()
 
 void ModeElipse::update()
 {
+    plane.update_ellipse();
     plane.calc_nav_roll();
     plane.calc_nav_pitch();
     plane.calc_throttle();
