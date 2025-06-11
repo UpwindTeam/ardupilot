@@ -659,6 +659,156 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 //     _data_is_stale = false; // status are correctly updated with current waypoint data 
 // }
 
+// // update L1 control for loitering
+// void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_t loiter_direction)
+// {
+//     const float radius_unscaled = radius;
+
+//     Location _current_loc;
+
+//     // scale loiter radius with square of EAS2TAS to allow us to stay
+//     // stable at high altitude
+//     radius = loiter_radius(fabsf(radius));
+
+//     // Calculate guidance gains used by PD loop (used during circle tracking)
+//     float omega = (6.2832f / _L1_period);
+//     float Kx = omega * omega;
+//     float Kv = 2.0f * _L1_damping * omega;
+
+//     // Calculate L1 gain required for specified damping (used during waypoint capture)
+//     float K_L1 = 4.0f * _L1_damping * _L1_damping;
+
+//     // Get current position and velocity
+//     if (_ahrs.get_location(_current_loc) == false) {
+//         // if no GPS loc available, maintain last nav/target_bearing
+//         _data_is_stale = true;
+//         return;
+//     }
+
+//     Vector2f _groundspeed_vector = _ahrs.groundspeed_vector();
+
+//     // Calculate groundspeed
+//     float groundSpeed = MAX(_groundspeed_vector.length() , 1.0f);
+
+
+//     // update _target_bearing_cd
+//     _target_bearing_cd = _current_loc.get_bearing_to(center_WP);
+
+
+//     // Calculate time varying control parameters
+//     // Calculate the L1 length required for specified period
+//     // 0.3183099 = 1/pi
+//     _L1_dist = 0.3183099f * _L1_damping * _L1_period * groundSpeed;
+
+//     // Calculate the NE position of the aircraft relative to WP A
+//     const Vector2f A_air = center_WP.get_distance_NE(_current_loc);
+
+//     // Calculate the unit vector from WP A to aircraft
+//     // protect against being on the waypoint and having zero velocity
+//     // if too close to the waypoint, use the velocity vector
+//     // if the velocity vector is too small, use the heading vector
+//     Vector2f A_air_unit;
+//     if (A_air.length() > 0.1f) {
+//         A_air_unit = A_air.normalized();
+//     } else {
+//         if (_groundspeed_vector.length() < 0.1f) {
+//             A_air_unit = Vector2f(cosf(_ahrs.get_yaw()), sinf(_ahrs.get_yaw()));
+//         } else {
+//             A_air_unit = _groundspeed_vector.normalized();
+//         }
+//     }
+
+//     // Calculate Nu to capture center_WP
+//     float xtrackVelCap = A_air_unit % _groundspeed_vector; // Velocity across line - perpendicular to radial inbound to WP
+//     float ltrackVelCap = - (_groundspeed_vector * A_air_unit); // Velocity along line - radial inbound to WP
+//     float Nu = atan2f(xtrackVelCap,ltrackVelCap);
+
+//     _prevent_indecision(Nu);
+//     _last_Nu = Nu;
+
+//     Nu = constrain_float(Nu, -M_PI_2, M_PI_2); // Limit Nu to +- Pi/2
+
+//     // Calculate lat accln demand to capture center_WP (use L1 guidance law)
+//     float latAccDemCap = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
+
+//     // Calculate radial position and velocity errors
+//     float xtrackVelCirc = -ltrackVelCap; // Radial outbound velocity - reuse previous radial inbound velocity
+//     float xtrackErrCirc = A_air.length() - radius; // Radial distance from the loiter circle
+
+//     // keep crosstrack error for reporting
+//     _crosstrack_error = xtrackErrCirc;
+
+//     // Calculate PD control correction to circle waypoint_ahrs.roll
+//     float latAccDemCircPD = (xtrackErrCirc * Kx + xtrackVelCirc * Kv);
+
+//     // Calculate tangential velocity
+//     float velTangent = xtrackVelCap * float(loiter_direction);
+
+//     // Prevent PD demand from turning the wrong way by limiting the command when flying the wrong way
+//     if (ltrackVelCap < 0.0f && velTangent < 0.0f) {
+//         latAccDemCircPD =  MAX(latAccDemCircPD, 0.0f);
+//     }
+
+//     // Calculate centripetal acceleration demand
+//     float latAccDemCircCtr = velTangent * velTangent / MAX((0.5f * radius), (radius + xtrackErrCirc));
+
+//     // Sum PD control and centripetal acceleration to calculate lateral manoeuvre demand
+//     float latAccDemCirc = loiter_direction * (latAccDemCircPD + latAccDemCircCtr);
+
+//     ////////////////
+//     //New code 30/May
+//     float x = (_L1_dist*_L1_dist - _crosstrack_error*_crosstrack_error)/(2*(_crosstrack_error+radius));
+//     float eta_1 = M_PI_2 - acosf((_crosstrack_error+x)/_L1_dist);
+
+//     float eta_2 = Nu;
+//     float nu = eta_2 + eta_1;
+//     ///////////////
+
+
+
+//     // Perform switchover between 'capture' and 'circle' modes at the
+//     // point where the commands cross over to achieve a seamless transfer
+//     // Only fly 'capture' mode if outside the circle
+//     const uint32_t now_ms = AP_HAL::millis();
+//     if (xtrackErrCirc > 0.0f && loiter_direction * latAccDemCap < loiter_direction * latAccDemCirc) {
+//         _latAccDem = latAccDemCap;
+
+//         /*
+//           if we were previously on the circle and the target has not
+//           changed then keep _WPcircle true. This prevents
+//           reached_loiter_target() from going false due to a gust of
+//           wind or an unachievable loiter radius
+//          */
+//         if (_WPcircle &&
+//             _last_loiter.reached_loiter_target_ms != 0 &&
+//             now_ms - _last_loiter.reached_loiter_target_ms < 200U &&
+//             loiter_direction == _last_loiter.direction &&
+//             is_equal(radius_unscaled, _last_loiter.radius) &&
+//             center_WP.same_loc_as(_last_loiter.center_WP)) {
+//             // same location, within 200ms, keep the _WPcircle status as true
+//             _last_loiter.reached_loiter_target_ms = now_ms;
+//         } else {
+//             _WPcircle = false;
+//             _last_loiter.reached_loiter_target_ms = 0;
+//         }
+
+//         _bearing_error = Nu; // angle between demanded and achieved velocity vector, +ve to left of track
+//         _nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians) from AC to L1 point
+//     } else {
+//         _latAccDem = latAccDemCirc;
+//         _WPcircle = true;
+//         _last_loiter.reached_loiter_target_ms = now_ms;
+//         _bearing_error = 0.0f; // bearing error (radians), +ve to left of track
+//         _nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians) from AC to L1 point
+//     }
+
+//     _last_loiter.radius = radius_unscaled;
+//     _last_loiter.direction = loiter_direction;
+//     _last_loiter.center_WP = center_WP;
+
+//     _data_is_stale = false; // status are correctly updated with current waypoint data
+// }
+
 // update L1 control for loitering
 void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_t loiter_direction)
 {
@@ -723,6 +873,24 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
     float ltrackVelCap = - (_groundspeed_vector * A_air_unit); // Velocity along line - radial inbound to WP
     float Nu = atan2f(xtrackVelCap,ltrackVelCap);
 
+
+    ////////////////
+    //New code 
+    float x = A_air.x;
+    float y = A_air.y;
+
+    float a = (_L1_dist*_L1_dist - _crosstrack_error*_crosstrack_error)/(2*(_crosstrack_error+radius));
+    float eta_1 = asinf((_crosstrack_error+x)/_L1_dist);
+
+    Vector2f v_path;
+    v_path = Vector2f(-sinf(atanf(y/x)),cosf(atanf(y/x)));
+
+    float eta_2 = _groundspeed_vector.dot(v_path)/groundSpeed;
+
+    float Nu = eta_2 + eta_1;
+    ///////////////
+
+
     _prevent_indecision(Nu);
     _last_Nu = Nu;
 
@@ -754,6 +922,9 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
 
     // Sum PD control and centripetal acceleration to calculate lateral manoeuvre demand
     float latAccDemCirc = loiter_direction * (latAccDemCircPD + latAccDemCircCtr);
+
+    
+
 
     // Perform switchover between 'capture' and 'circle' modes at the
     // point where the commands cross over to achieve a seamless transfer
