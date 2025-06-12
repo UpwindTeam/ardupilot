@@ -404,6 +404,7 @@ void Plane::update_ellipse()
             nav_controller->update_loiter(ellipse_S2.center_C1, ellipse_S2.l_dist, 1);
             hal.console->printf("Quadrant 4\n");
         }
+    plane.set_target_altitude_location(home);
 }
 
 /*

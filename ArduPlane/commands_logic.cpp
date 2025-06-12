@@ -338,10 +338,11 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 void Plane::do_ellipse()
 {
     ellipse_S2.center_C00 = home; // location of the center of the ellipse
-
+    prev_WP_loc = current_loc;
+    set_target_altitude_location(home);
     //Define distances
-    ellipse_S2.l_dist = 150;
-    ellipse_S2.c_dist = 100;
+    ellipse_S2.l_dist = 75;
+    ellipse_S2.c_dist = 50;
 
     ellipse_S2.center_C1 = ellipse_S2.center_C00;
     ellipse_S2.center_C1.offset(0, -ellipse_S2.c_dist);
@@ -361,6 +362,7 @@ void Plane::do_ellipse()
     ellipse_S2.center_C22 = ellipse_S2.center_C00;
     ellipse_S2.center_C22.offset(-ellipse_S2.l_dist,ellipse_S2.c_dist);
 
+    plane.set_target_altitude_current();
     hal.console->println("Initialization of EIGHT-SPHERE completed");
 
     

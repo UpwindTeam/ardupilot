@@ -626,6 +626,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
     //Calculate lat accln demand to capture center_WP (use L1 guidance law)
     _latAccDem = 2.0f * groundSpeed * groundSpeed / L1_distance * sinf(Nu);
     
+    
     /*
     //Calculate PD control correction to circle waypoint_ahrs.roll
     float latAccDemCircPD = (xtrackErrCirc * Kx + xtrackVelCirc * Kv);
