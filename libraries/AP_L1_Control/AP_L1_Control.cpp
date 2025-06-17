@@ -542,7 +542,9 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
     //_target_bearing_cd = _current_loc.get_bearing_to(center_WP);
 
     // get relative position to waypoint in meters
-    Vector2f _loiter_center_vector = _current_loc.get_relative_pos(center_WP);
+    // Vector2f _loiter_center_vector = _current_loc.get_relative_pos(center_WP);
+    
+    Vector2f _loiter_center_vector = _current_loc.get_distance_NE(center_WP);
 
     // get current angular position in the circle of the closest point in the path
     float sigma_Q = atan2f(_loiter_center_vector.y,_loiter_center_vector.x);
@@ -574,7 +576,8 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
         L1_distance = L1.length();
     }
     else{
-        float a = (_L1_dist*_L1_dist - _crosstrack_error*_crosstrack_error)/(2*(_crosstrack_error+radius));
+        L1_distance = _L_dist;
+        float a = (L1_distance*L1_distance - _crosstrack_error*_crosstrack_error)/(2*(_crosstrack_error+radius));
         sigma_T = sigma_Q + acosf(1-a/radius)*loiter_direction; 
 
         T = Vector2f(cosf(sigma_T),sinf(sigma_T))*radius;
@@ -591,7 +594,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 
         Nu = constrain_float(Nu, -M_PI_2, M_PI_2); //Limit Nu to +- Pi/2
 
-        L1_distance = _L1_dist;
+        
     }
 
 
@@ -605,8 +608,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
     float xtrackVelCirc = -ltrackVelCap; // Radial outbound velocity - reuse previous radial inbound velocity
     float xtrackErrCirc = A_air.length() - radius; // Radial distance from the loiter circle
     
-    // keep crosstrack error for reporting
-    _crosstrack_error = A_air.length() - radius;
+    
 
     _L1_dist = sqrt(sq(_L_dist)+sq(_crosstrack_error));
     //hal.console->printf("CrossTrackError: : %2f\n", _crosstrack_error);
@@ -620,10 +622,15 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 
     //hal.console->printf("L1 dist: %2f\n", _L1_dist);
     */
+
+    // Calculate the NE position of the aircraft relative to WP A
+    const Vector2f A_air = center_WP.get_distance_NE(_current_loc);
     
-    
+    // keep crosstrack error for reporting
+    _crosstrack_error = A_air.length() - radius;
 
     //Calculate lat accln demand to capture center_WP (use L1 guidance law)
+    //_latAccDem = 2.0f * groundSpeed * groundSpeed / L1_distance * sinf(Nu);
     _latAccDem = 2.0f * groundSpeed * groundSpeed / L1_distance * sinf(Nu);
     
     
