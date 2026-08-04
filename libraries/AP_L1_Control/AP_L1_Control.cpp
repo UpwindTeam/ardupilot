@@ -479,13 +479,19 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
     //Limit Nu to +-(pi/2)
     Nu = constrain_float(Nu, -1.5708f, +1.5708f);
 
-    if (L_use < 1)
+
+    if (L_use < 1 )  //L0 constant
     {
+        //hal.console->println("L_use = 1");
+        _latAccDem = 2.0f * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);      
+    }
+    else if (L_use < 2){ // L1
         //hal.console->println("L_use = 0");
         float K_L1 = 4.0f * _L1_damping * _L1_damping;
         _latAccDem = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
     }
-    else{
+    else
+    {
         //hal.console->println("L_use = 1");
         _latAccDem = 2.0f * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);      
     }
@@ -508,6 +514,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
     const float radius_unscaled = radius;
 
     float L_use = _L_method;
+    float L_zero;
     
     float Nu;
     float xtrackVel;
@@ -549,14 +556,27 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
     // get current angular position in the circle of the closest point in the path
     float sigma_Q = atan2f(_loiter_center_vector.y,_loiter_center_vector.x);
 
-    float sigma_zero = 2*asinf(_L_dist/(2*radius));
+    float L_i = 5;
+    float L_f = _L_dist;
+    float lambda = _L1_damping;
+
+    if (L_use<2)
+    {
+        L_zero = _L_dist;
+    }
+    else{
+        L_zero = (1-exp(-lambda*abs(_crosstrack_error)))*L_i + (exp(-lambda*abs(_crosstrack_error)))*L_f;
+    }
+
+
+    float sigma_zero = 2*asinf(L_zero/(2*radius));
     float sigma_T;
     Vector2f T;
     Vector2f L1;
     Vector2f L1_unit; // Unit vector from WP A to aircraft
     float L1_distance;
 
-    if (L_use == 0)  //L0 constant
+    if (L_use < 1 )  //L0 constant
     {
         sigma_T = sigma_Q + sigma_zero*loiter_direction; 
         T = Vector2f(cosf(sigma_T),sinf(sigma_T))*radius;
@@ -575,8 +595,8 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 
         L1_distance = L1.length();
     }
-    else if (L_use == 1 ){ //L1
-        L1_distance = _L_dist;
+    else if (L_use < 2){ // L1
+        L1_distance = L_zero;
         float a = (L1_distance*L1_distance - _crosstrack_error*_crosstrack_error)/(2*(_crosstrack_error+radius));
         sigma_T = sigma_Q + acosf(1-a/radius)*loiter_direction; 
 
@@ -598,8 +618,23 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
     }
     else{  // L0 with modifications
 
+        sigma_T = sigma_Q + sigma_zero*loiter_direction; 
+        T = Vector2f(cosf(sigma_T),sinf(sigma_T))*radius;
 
-        
+        L1 = T - _loiter_center_vector;
+
+        L1_unit = (L1).normalized(); // Unit vector from WP A to aircraft
+        xtrackVel = _groundspeed_vector % (-L1_unit); // Velocity across line
+        ltrackVel = _groundspeed_vector * (-L1_unit); // Velocity along line
+        Nu = atan2f(xtrackVel,ltrackVel);
+    
+        _prevent_indecision(Nu);
+        _last_Nu = Nu;
+
+        Nu = constrain_float(Nu, -M_PI_2, M_PI_2); //Limit Nu to +- Pi/2
+
+        L1_distance = L1.length();
+
     }
 
 
