@@ -39,14 +39,23 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("L_DIST",    3, AP_L1_Control, _L_dist, 40),
 
+    // @Param: L_I_DIST
+    // @DisplayName: L_i distance for varying L0
+    // @Description: L_i distance for varying L0
+    // @Units: m
+    // @Range: 1 90
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("L_I_DIST",    4, AP_L1_Control, _L_i_dist, 5),
+
     // @Param: L0
     // @DisplayName: Guidance method
-    // @Description: Guidance method. 1 = L1 guidance, 0 = L0 guidance. 
+    // @Description: Guidance method. 1 = L1 guidance, 0 = L0 guidance, 2 = Varying L0. 
     // @Units: no units
     // @Range: 0 1
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("L_METHOD",   4, AP_L1_Control, _L_method, 1),
+    AP_GROUPINFO("L_METHOD",   5, AP_L1_Control, _L_method, 1),
 
     // @Param: LIM_BANK
     // @DisplayName: Loiter Radius Bank Angle Limit
@@ -54,7 +63,16 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @Units: deg
     // @Range: 0 89
     // @User: Advanced
-    AP_GROUPINFO("LIM_BANK",   5, AP_L1_Control, _loiter_bank_limit, 0.0f),
+    AP_GROUPINFO("LIM_BANK",   6, AP_L1_Control, _loiter_bank_limit, 0.0f),
+
+     // @Param: L_lambda
+    // @DisplayName: lambda for varying L0
+    // @Description: lambda for varying L0
+    // @Units: m
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("L_LAMBDA",  7, AP_L1_Control, _L_lambda, 0.1),
 
 
     AP_GROUPEND
@@ -377,6 +395,8 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
     float xtrackVel;
     float ltrackVel;
 
+    float L_zero;
+
     float L_use = _L_method;
 
     // Get current position and velocity
@@ -425,12 +445,28 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
     // calculate distance to target track, for reporting
     _crosstrack_error = A_air % AB;
     
-     if (L_use > 0)
+    //  if (L_use > 0)
+    // {
+    //     _L1_dist = MAX(0.3183099f * _L1_damping * _L1_period * groundSpeed, dist_min);
+    // }
+    // else{
+    //     _L1_dist = sqrt(sq(_L_dist)+sq(_crosstrack_error));
+    // }
+
+    if (L_use < 1 )  //L0 constant
     {
+        _L1_dist = sqrt(sq(_L_dist)+sq(_crosstrack_error));
+    }
+    else if (L_use < 2){ // L1
         _L1_dist = MAX(0.3183099f * _L1_damping * _L1_period * groundSpeed, dist_min);
     }
-    else{
-        _L1_dist = sqrt(sq(_L_dist)+sq(_crosstrack_error));
+    else //Varying L0 - L_use = 2
+    {
+        float L_i = _L_i_dist;
+        float L_f = _L_dist;
+        float lambda = _L_lambda;
+        L_zero = (1-exp(-lambda*abs(_crosstrack_error)))*L_i + (exp(-lambda*abs(_crosstrack_error)))*L_f;  
+        _L1_dist = sqrt(sq(L_zero)+sq(_crosstrack_error));
     }
 
     //hal.console->printf("L1 dist: %2f\n", _L1_dist);
@@ -482,17 +518,17 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 
     if (L_use < 1 )  //L0 constant
     {
-        //hal.console->println("L_use = 1");
+        //hal.console->println("L_use = 0");
         _latAccDem = 2.0f * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);      
     }
     else if (L_use < 2){ // L1
-        //hal.console->println("L_use = 0");
+        //hal.console->println("L_use = 1");
         float K_L1 = 4.0f * _L1_damping * _L1_damping;
         _latAccDem = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
     }
     else
     {
-        //hal.console->println("L_use = 1");
+        //hal.console->println("L_use = varying L0");
         _latAccDem = 2.0f * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);      
     }
 
@@ -517,6 +553,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
     float L_zero;
     
     float Nu;
+   // float Nu2;
     float xtrackVel;
     float ltrackVel;
     //float L = 30.0f;
@@ -549,16 +586,16 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
     //_target_bearing_cd = _current_loc.get_bearing_to(center_WP);
 
     // get relative position to waypoint in meters
-    // Vector2f _loiter_center_vector = _current_loc.get_relative_pos(center_WP);
+    //Vector2f _loiter_center_vector = _current_loc.get_relative_pos(center_WP);
     
     Vector2f _loiter_center_vector = _current_loc.get_distance_NE(center_WP);
 
     // get current angular position in the circle of the closest point in the path
     float sigma_Q = atan2f(_loiter_center_vector.y,_loiter_center_vector.x);
 
-    float L_i = 5;
+    float L_i = _L_i_dist;
     float L_f = _L_dist;
-    float lambda = _L1_damping;
+    float lambda = _L_lambda;
 
     if (L_use<2)
     {
@@ -673,6 +710,14 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
     //_latAccDem = 2.0f * groundSpeed * groundSpeed / L1_distance * sinf(Nu);
     _latAccDem = 2.0f * groundSpeed * groundSpeed / L1_distance * sinf(Nu);
     
+    //new acc with aditional curvature term
+    //get relative pos to center circle
+    //Vector2f current_relative_pos = _current_loc.get_relative_pos(center_WP);
+
+    //Nu2 = acosf(_groundspeed_vector.dot(current_relative_pos) / (groundSpeed * current_relative_pos.length()));// - M_PI_2f;
+
+
+    //_latAccDem = 2.0f * groundSpeed * groundSpeed / L1_distance * sinf(Nu) - groundSpeed * groundSpeed * cosf(Nu2) /(radius -_crosstrack_error);
     
     /*
     //Calculate PD control correction to circle waypoint_ahrs.roll

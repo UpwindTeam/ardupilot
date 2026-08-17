@@ -125,6 +125,8 @@ private:
     AP_Float _loiter_bank_limit;
     AP_Float _L_method;
     AP_Float _L_dist;
+    AP_Float _L_i_dist;
+    AP_Float _L_lambda;
 
     // remember reached_loiter_target decision
     struct {
