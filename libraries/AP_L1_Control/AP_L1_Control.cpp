@@ -388,6 +388,7 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
 // update L control for waypoint navigation - UPWIND project
 void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct Location &next_WP, float dist_min)
 {
+    hal.console->printf("starting waypoint navigation!!!\n");
 
     //float L = 30.0f;
     struct Location _current_loc;
@@ -545,6 +546,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 
 void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius, int8_t loiter_direction)
 {
+    hal.console->printf("starting LOITER!!\n");
     struct Location _current_loc;
 
     const float radius_unscaled = radius;
@@ -605,6 +607,12 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
         L_zero = (1-exp(-lambda*abs(_crosstrack_error)))*L_i + (exp(-lambda*abs(_crosstrack_error)))*L_f;
     }
 
+    // Calculate the NE position of the aircraft relative to WP A
+    const Vector2f A_air = center_WP.get_distance_NE(_current_loc);
+    
+    // keep crosstrack error for reporting
+    _crosstrack_error = A_air.length() - radius;
+
 
     float sigma_zero = 2*asinf(L_zero/(2*radius));
     float sigma_T;
@@ -633,7 +641,17 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
         L1_distance = L1.length();
     }
     else if (L_use < 2){ // L1
-        L1_distance = L_zero;
+        
+
+        if (L_zero> abs(_crosstrack_error))
+        {
+            L1_distance = L_zero;
+        }
+        else
+        {
+            L1_distance = abs(_crosstrack_error)+1.0f;
+        }
+
         float a = (L1_distance*L1_distance - _crosstrack_error*_crosstrack_error)/(2*(_crosstrack_error+radius));
         sigma_T = sigma_Q + acosf(1-a/radius)*loiter_direction; 
 
@@ -651,10 +669,11 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 
         Nu = constrain_float(Nu, -M_PI_2, M_PI_2); //Limit Nu to +- Pi/2
 
+        L1_distance = L1.length();
         
     }
     else{  // L0 with modifications
-
+        
         sigma_T = sigma_Q + sigma_zero*loiter_direction; 
         T = Vector2f(cosf(sigma_T),sinf(sigma_T))*radius;
 
@@ -671,6 +690,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
         Nu = constrain_float(Nu, -M_PI_2, M_PI_2); //Limit Nu to +- Pi/2
 
         L1_distance = L1.length();
+    
 
     }
 
@@ -699,12 +719,6 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 
     //hal.console->printf("L1 dist: %2f\n", _L1_dist);
     */
-
-    // Calculate the NE position of the aircraft relative to WP A
-    const Vector2f A_air = center_WP.get_distance_NE(_current_loc);
-    
-    // keep crosstrack error for reporting
-    _crosstrack_error = A_air.length() - radius;
 
     //Calculate lat accln demand to capture center_WP (use L1 guidance law)
     //_latAccDem = 2.0f * groundSpeed * groundSpeed / L1_distance * sinf(Nu);
