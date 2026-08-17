@@ -341,7 +341,7 @@ void Plane::do_ellipse()
     prev_WP_loc = current_loc;
     set_target_altitude_location(home);
     //Define distances
-    ellipse_S2.l_dist = 75;
+    ellipse_S2.l_dist = 100;
     ellipse_S2.c_dist = 50;
 
     ellipse_S2.center_C1 = ellipse_S2.center_C00;

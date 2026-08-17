@@ -388,8 +388,6 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
 // update L control for waypoint navigation - UPWIND project
 void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct Location &next_WP, float dist_min)
 {
-    hal.console->printf("starting waypoint navigation!!!\n");
-
     //float L = 30.0f;
     struct Location _current_loc;
     float Nu;
@@ -546,7 +544,6 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 
 void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius, int8_t loiter_direction)
 {
-    hal.console->printf("starting LOITER!!\n");
     struct Location _current_loc;
 
     const float radius_unscaled = radius;
