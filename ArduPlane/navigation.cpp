@@ -380,31 +380,41 @@ void Plane::update_ellipse()
     //Vector2f relative_pos = current_loc.get_relative_pos(ellipse_S2.center_C00);
     Vector2f relative_pos = ellipse_S2.center_C00.get_relative_pos(current_loc);
     
+    
     // case 1: y>=0 && |x|<=c
     if(relative_pos.x>=0 && abs(relative_pos.y)<=ellipse_S2.c_dist)
         {
             nav_controller->update_waypoint(ellipse_S2.center_C11,ellipse_S2.center_C21);
-            hal.console->printf("Quadrant 1\n");
+            prev_WP_loc = ellipse_S2.center_C11;
+            next_WP_loc = ellipse_S2.center_C21;
+            //hal.console->printf("Quadrant 1\n");
         }
     // case 2: x>c
     else if(relative_pos.y>ellipse_S2.c_dist)
         {
             nav_controller->update_loiter(ellipse_S2.center_C2, ellipse_S2.l_dist, 1);
-            hal.console->printf("Quadrant 2\n");
+            prev_WP_loc = current_loc;
+            next_WP_loc = ellipse_S2.center_C2;
+            //hal.console->printf("Quadrant 2\n");
         }
     // case 3: y<0 && |x|<=c
     else if(relative_pos.x<0 && abs(relative_pos.y)<=ellipse_S2.c_dist)
         {
             nav_controller->update_waypoint(ellipse_S2.center_C22,ellipse_S2.center_C12);
-            hal.console->printf("Quadrant 3\n");
+            prev_WP_loc = ellipse_S2.center_C22;
+            next_WP_loc = ellipse_S2.center_C12;
+            //hal.console->printf("Quadrant 3\n");
         }
     // case 4: x<-c
     else if(relative_pos.y<-ellipse_S2.c_dist)    
         {
             nav_controller->update_loiter(ellipse_S2.center_C1, ellipse_S2.l_dist, 1);
-            hal.console->printf("Quadrant 4\n");
+            prev_WP_loc = current_loc;
+            next_WP_loc = ellipse_S2.center_C1;
+            //hal.console->printf("Quadrant 4\n");
         }
-    plane.set_target_altitude_location(home);
+        //set_target_altitude_location(ellipse_S2.center_C00);
+        //setup_alt_slope();
 }
 
 /*

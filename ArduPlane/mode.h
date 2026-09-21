@@ -674,6 +674,9 @@ public:
 
     //void stabilize_quaternion();
 
+    //bool does_auto_navigation() const override { return true; }
+    bool does_auto_throttle() const override { return true; }
+
 protected:
 
     bool _enter() override;
