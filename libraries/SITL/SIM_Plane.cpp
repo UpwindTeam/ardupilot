@@ -383,6 +383,9 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     accel_body = Vector3f(thrust, 0, 0) + force;
     accel_body /= mass;
 
+    // tether / external payload force
+    add_external_forces(accel_body);
+
     // add some noise
     if (thrust_scale > 0) {
         add_noise(fabsf(thrust) / thrust_scale);
